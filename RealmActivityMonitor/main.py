@@ -41,7 +41,7 @@ def lambda_handler(event, context):
     table_name = os.environ["DYNAMODB_TABLE_NAME"]
     dynamodb = boto3.resource("dynamodb")
     table = dynamodb.Table(table_name)
-    table.put_item(Item={"PlayerName": "Dachs", "LastSeen": last_seen})
+    table.put_item(Item={"PlayerName": "Dachs", "Timestamp": last_seen})
     print (f"Last seen value saved: {last_seen}")
     return {
         "statusCode": 200,
