@@ -1,44 +1,35 @@
 import requests
 from bs4 import BeautifulSoup
+import os
+import boto3
 from datetime import datetime
 import re
 
-def fetch_html(url: str) -> str:
+def lambda_handler(event, context):
+    url = "https://www.realmeye.com/player/Dachs"
+
     """Fetch raw HTML content from the given URL."""
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
+    response = requests.get(url, headers=headers, timeout=10)
     try:
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()  # Raise an error for bad status codes
-        return response.text
+        response.raise_for_status()
     except requests.RequestException as e:
         print(f"Error fetching {url}: {e}")
-        return ""
+        return {"statusCode": 500, "body": "Error fetching data"}
 
-def parse_html(html: str):
-    """Parse the HTML content and extract specific data."""
-    soup = BeautifulSoup(html, 'lxml')  # Use lxml parser for better performance
-
-    # Extract page title
-    title = soup.title.string.strip() if soup.title else "No title found"
-
-    # Extract links containing '/player/Dachs'
-    links = [a['href'] for a in soup.find_all('a', href=True) if '/player/Dachs' in a['href']]
-    for link in links:
-        print(link)
-
-    # Extract "Last seen" information
-    last_seen_raw = next(
-        (row.find_all("td")[1].text.strip()
-         for row in soup.find("table", class_="summary").find_all("tr")
-         if len(row.find_all("td")) >= 2 and row.find_all("td")[0].text.strip() == "Last seen"),
-        "Not found"
-    )
-
+    soup = BeautifulSoup(response.text, "lxml")
+    last_seen_raw = "Not found"
+    table = soup.find("table", class_="summary")
+    for row in table.find_all("tr"):
+        cells = row.find_all("td")
+        if len(cells) == 2 and cells[0].text.strip() == "Last seen":
+            last_seen_raw = cells[1].text.strip()
+            break
     # Clean and parse "Last seen" into ISO 8601 format
     last_seen_cleaned = re.sub(r' as .*', '', last_seen_raw)  # Remove " as Kensei" or similar
-    last_seen_iso = ""
+    last_seen = ""
     try:
         last_seen_datetime = datetime.strptime(last_seen_cleaned, "%Y-%m-%d %H:%M:%S")
         last_seen_iso = last_seen_datetime.isoformat() + "Z"  # Add 'Z' for UTC
@@ -46,12 +37,13 @@ def parse_html(html: str):
     except ValueError:
         print("Error: Unable to parse 'Last seen' value into datetime format.")
 
-def main():
-    """Run fetch_html and parse the content."""
-    url = "http://www.realmeye.com/player/Dachs"  # Replace with the desired URL
-    html_content = fetch_html(url)
-    if html_content:
-        parse_html(html_content)
-
-if __name__ == "__main__":
-    main()
+    # Save to DynamoDB
+    table_name = os.environ["DYNAMODB_TABLE_NAME"]
+    dynamodb = boto3.resource("dynamodb")
+    table = dynamodb.Table(table_name)
+    table.put_item(Item={"PlayerName": "Dachs", "LastSeen": last_seen})
+    print (f"Last seen value saved: {last_seen}")
+    return {
+        "statusCode": 200,
+        "body": f"Last seen value saved: {last_seen}"
+    }
