@@ -16,7 +16,7 @@ class DynamoDBStack(Stack):
                 type=dynamodb.AttributeType.STRING
             ),
             sort_key=dynamodb.Attribute(
-                name="Timestamp",  # Sort key
+                name="LastSeen",  # Sort key
                 type=dynamodb.AttributeType.STRING
             ),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST
