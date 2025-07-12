@@ -19,4 +19,5 @@ soupsieve/
 typing_extensions.py
 urllib3/
 RealmActivityMonitorCDK/cdk.out/
+RealmActivityMonitorCDK/lib/__pycache__/
 cdk.context.json
