@@ -18,6 +18,14 @@ six.py
 soupsieve/
 typing_extensions.py
 urllib3/
+RealmActivityMonitorCDK/aws_cdk/
+RealmActivityMonitorCDK/attr*
+RealmActivityMonitorCDK/cattr*
 RealmActivityMonitorCDK/cdk.out/
+RealmActivityMonitorCDK/constructs/
+RealmActivityMonitorCDK/jsii/
+RealmActivityMonitorCDK/importlib_resources/
 RealmActivityMonitorCDK/lib/__pycache__/
+RealmActivityMonitorCDK/typeguard/
 cdk.context.json
+publication.py
