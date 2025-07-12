@@ -1,0 +1,34 @@
+{
+  "version": "45.0.0",
+  "files": {
+    "198650e43a5dc617bc015e29a57aa159f5db7002c3c5390bfa337f642f58ee48": {
+      "displayName": "RealmActivityLambda/Code",
+      "source": {
+        "path": "asset.198650e43a5dc617bc015e29a57aa159f5db7002c3c5390bfa337f642f58ee48",
+        "packaging": "zip"
+      },
+      "destinations": {
+        "current_account-current_region": {
+          "bucketName": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}",
+          "objectKey": "198650e43a5dc617bc015e29a57aa159f5db7002c3c5390bfa337f642f58ee48.zip",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-file-publishing-role-${AWS::AccountId}-${AWS::Region}"
+        }
+      }
+    },
+    "0f5970b1893676d31ebef5398d9853f18c17d8cc2b3e8e99b752bdf6786a28bf": {
+      "displayName": "LambdaStack Template",
+      "source": {
+        "path": "LambdaStack.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "current_account-current_region": {
+          "bucketName": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}",
+          "objectKey": "0f5970b1893676d31ebef5398d9853f18c17d8cc2b3e8e99b752bdf6786a28bf.json",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-file-publishing-role-${AWS::AccountId}-${AWS::Region}"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}
