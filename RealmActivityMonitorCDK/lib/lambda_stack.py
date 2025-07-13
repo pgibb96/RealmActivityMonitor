@@ -15,10 +15,13 @@ class LambdaStack(Stack):
 
         # Create a Lambda function
         lambda_function = _lambda.Function(
-            self, "RealmActivityLambda",
+            self,
+            "RealmActivityLambda",
             runtime=_lambda.Runtime.PYTHON_3_9,
             handler="main.lambda_handler",  # Update with your Lambda handler
-            code=_lambda.Code.from_asset("../RealmActivityMonitor"),  # Path to your Lambda code
+            code=_lambda.Code.from_asset(
+                "../RealmActivityMonitor"
+            ),  # Path to your Lambda code
             environment={
                 "DYNAMODB_TABLE_NAME": dynamodb_table.table_name,
             },
@@ -28,10 +31,13 @@ class LambdaStack(Stack):
         # Grant the Lambda function permissions to access the DynamoDB table
         dynamodb_table.grant_read_write_data(lambda_function)
 
-        # Create a rule to trigger Lambda every 30 minutes
+        # Create a rule to trigger Lambda every 5 minutes on the clock
         rule = events.Rule(
-            self, "RealmActivitySchedule",
-            schedule=events.Schedule.rate(Duration.minutes(30))
+            self,
+            "RealmActivitySchedule",
+            schedule=events.Schedule.cron(
+                minute="0/5", hour="*", day="*", month="*", year="*"
+            ),
         )
         rule.add_target(targets.LambdaFunction(lambda_function))
 
@@ -39,7 +45,11 @@ class LambdaStack(Stack):
             iam.PolicyStatement(
                 actions=["ssm:GetParameter"],
                 resources=[
-                    f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/webhook"
-                ]
+                    f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/webhook",
+                    f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/id",
+                    f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/id/boss",
+                    f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/realmeye",
+                    f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/realmeye/header",
+                ],
             )
-)
+        )

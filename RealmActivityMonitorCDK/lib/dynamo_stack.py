@@ -4,20 +4,17 @@ from aws_cdk import (
 )
 from constructs import Construct
 
+
 class DynamoDBStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         # Create a DynamoDB table
         self.table = dynamodb.Table(
-            self, "RealmActivityTable",
+            self,
+            "RealmActivityTable",
             partition_key=dynamodb.Attribute(
-                name="PlayerName",  # Partition key
-                type=dynamodb.AttributeType.STRING
+                name="PlayerName", type=dynamodb.AttributeType.STRING  # Partition key
             ),
-            sort_key=dynamodb.Attribute(
-                name="Timestamp",  # Sort key
-                type=dynamodb.AttributeType.STRING
-            ),
-            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
         )
