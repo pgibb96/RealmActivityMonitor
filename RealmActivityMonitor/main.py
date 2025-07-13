@@ -76,14 +76,19 @@ def lambda_handler(event, context):
             print(
                 f"Comparing existing timestamp {existing_dt} with new timestamp {new_dt}"
             )
+            # If new activity, increment strike and reset cooldown
             if new_dt > existing_dt:
                 strike += 1 if strike < 5 else 0  # Cap strikes at 5
                 cooldown_counter = 0
-            else:
+            # If on a cooldown, increment cooldown counter
+            elif strike > 0:
                 cooldown_counter += 1
                 if cooldown_counter >= 12:
                     strike = 0  # Reset strike if new timestamp is not later
                     cooldown_counter = 0  # Reset cooldown
+            # If no new activity, everything has been going well
+            else:
+                print(f"Good job, you are staying strong")
         else:
             strike = 0  # No previous timestamp, so treat as new
             cooldown_counter = 0  # Reset cooldown
@@ -92,7 +97,7 @@ def lambda_handler(event, context):
         strike = 0  # Fallback to safe default
         cooldown_counter = 0  # Reset cooldown
 
-    print(f"strike number: {strike}")
+    print(f"New strike number: {strike}, cooldown counter: {cooldown_counter}")
 
     # Update DynamoDB only if something has changed
     if existing_timestamp and (
