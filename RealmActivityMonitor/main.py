@@ -49,14 +49,16 @@ def lambda_handler(event, context):
     # Get existing data (get single item by PlayerName)
     existing_timestamp = ""
     existing_strike = 0
+    existing_cooldown = 0
     try:
         response = table.get_item(Key={"PlayerName": "Dachs"})
         item = response.get("Item")
         if item:
             existing_timestamp = item.get("Timestamp", "")
             existing_strike = item.get("Strike", 0)
+            existing_cooldown = item.get("CooldownCounter", 0)
             print(
-                f"Existing timestamp: {existing_timestamp}, Existing strike: {existing_strike}"
+                f"Existing timestamp: {existing_timestamp}, Existing strike: {existing_strike}, existing cooldown: {existing_cooldown}"
             )
     except Exception as e:
         print(f"Error fetching existing item: {e}")
@@ -66,6 +68,7 @@ def lambda_handler(event, context):
 
     # Compare timestamps
     strike = existing_strike
+    cooldown_counter = existing_cooldown
     try:
         if existing_timestamp:
             existing_dt = isoparse(existing_timestamp)
@@ -74,23 +77,36 @@ def lambda_handler(event, context):
                 f"Comparing existing timestamp {existing_dt} with new timestamp {new_dt}"
             )
             if new_dt > existing_dt:
-                strike += 1 if strike < 5 else 5  # Cap strikes at 5
+                strike += 1 if strike < 5 else 0  # Cap strikes at 5
+                cooldown_counter = 0
             else:
-                strike = 0  # Reset strike if new timestamp is not later
+                cooldown_counter += 1
+                if cooldown_counter >= 12:
+                    strike = 0  # Reset strike if new timestamp is not later
+                    cooldown_counter = 0  # Reset cooldown
         else:
             strike = 0  # No previous timestamp, so treat as new
+            cooldown_counter = 0  # Reset cooldown
     except Exception as e:
         print(f"Error comparing timestamps: {e}")
         strike = 0  # Fallback to safe default
+        cooldown_counter = 0  # Reset cooldown
 
     print(f"strike number: {strike}")
 
     # Update DynamoDB only if something has changed
     if existing_timestamp and (
-        existing_timestamp != last_seen or existing_strike != strike
+        existing_timestamp != last_seen
+        or existing_strike != strike
+        or existing_cooldown != cooldown_counter
     ):
         table.put_item(
-            Item={"PlayerName": "Dachs", "Timestamp": last_seen, "Strike": strike}
+            Item={
+                "PlayerName": "Dachs",
+                "Timestamp": last_seen,
+                "Strike": strike,
+                "CooldownCounter": cooldown_counter,
+            }
         )
         print(f"Last seen value saved: {last_seen}")
 
@@ -151,13 +167,13 @@ def generate_message(last_seen: str, strike: int):
         return f"<a:bufoalarma:1393741604040212510> BUSTED! <@{discord_id}> was spotted <t:{int(datetime.fromisoformat(last_seen.replace('Z', '')).timestamp())}:R>. Let's hope you choose a better path. This behavior will not be tolerated..."
     # Strike 2
     if strike == 2:
-        return f"<:bufocantbelieveyouraudacity:1393730510567637043> <@{discord_id}>, you have continued to be play. Explain yourself, or face the consequences!"
+        return f"<:tsabufogropesyou:1393770044449886340> <@{discord_id}>, you have continued to be play. Explain yourself, or face the consequences!"
     # Strike 3, you're out!
     if strike == 3:
         return f"<:bufobehindbars:1393741606292684801> <@{discord_id}>, you have defied me for the last time.\n<@{boss_id}> has been informed of this continued transgression."
     # Strike 4, clown
     if strike == 4:
-        return f"<:bufoclown:1393743230247501965> <-- <@{discord_id}>"
+        return f"<:bufoclown:1393743230247501965> <-- This you, <@{discord_id}>?"
 
     return f"<:bufocometothedarkside:1393744385782448199> Welcome back, <@{discord_id}>"
 
