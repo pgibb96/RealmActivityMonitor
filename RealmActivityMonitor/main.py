@@ -8,30 +8,27 @@ from dateutil.parser import isoparse
 from boto3.dynamodb.conditions import Key
 import json
 
+
 # Helper used to retrieve specific secure variables from AWS SSM Parameter Store
 def get_secure_variable(link: str):
     ssm = boto3.client("ssm")
-    response = ssm.get_parameter(
-        Name=f"/discord/{link}",
-        WithDecryption=True
-    )
+    response = ssm.get_parameter(Name=f"/discord/{link}", WithDecryption=True)
     return response["Parameter"]["Value"]
 
+
 # Load the secure variables
-discord_id = get_secure_variable('id')
-boss_id = get_secure_variable('id/boss')
-realmeye_url = get_secure_variable('realmeye')
-realmeye_headers = get_secure_variable('realmeye/headers')
+discord_id = get_secure_variable("id")
+boss_id = get_secure_variable("id/boss")
+realmeye_url = get_secure_variable("realmeye")
+realmeye_headers = get_secure_variable("realmeye/headers")
+
 
 # Main hanlder
 def lambda_handler(event, context):
     print("Lambda function started.")
     response = get_realmeye_html()
     if response is None:
-        return {
-            "statusCode": 500,
-            "body": "Failed to fetch data from RealmEye."
-        }
+        return {"statusCode": 500, "body": "Failed to fetch data from RealmEye."}
     print("Fetched RealmEye HTML successfully.")
 
     # Parse the HTML to find "Last seen"
@@ -40,18 +37,12 @@ def lambda_handler(event, context):
     # Clean and parse "Last seen" into ISO 8601 format
     last_seen = format_raw_last_seen(last_seen_raw)
     if not last_seen:
-        return {
-            "statusCode": 400,
-            "body": "Invalid 'Last seen' format."
-        }
+        return {"statusCode": 400, "body": "Invalid 'Last seen' format."}
 
     # Get dynamoDB table name from environment variable
     table_name = os.environ["DYNAMODB_TABLE_NAME"]
     if not table_name:
-        return {
-            "statusCode": 500,
-            "body": "DynamoDB table name not configured."
-        }
+        return {"statusCode": 500, "body": "DynamoDB table name not configured."}
     dynamodb = boto3.resource("dynamodb")
     table = dynamodb.Table(table_name)
 
@@ -66,7 +57,7 @@ def lambda_handler(event, context):
         print(f"Existing timestamp: {existing_timestamp}")
     except Exception as e:
         print(f"Error fetching existing item: {e}")
-    
+
     if not existing_timestamp:
         print("No existing timestamp found, treating as new entry.")
 
@@ -88,19 +79,18 @@ def lambda_handler(event, context):
     print(f"strike number: {strike}")
 
     # Update DynamoDB
-    table.put_item(Item={
-        "PlayerName": "Dachs",
-        "Timestamp": last_seen,
-        "Strike": strike
-    })
+    table.put_item(
+        Item={"PlayerName": "Dachs", "Timestamp": last_seen, "Strike": strike}
+    )
 
     print(f"Last seen value saved: {last_seen}")
     if strike > 0 and strike < 6:
         notify_discord(last_seen, strike)
     return {
         "statusCode": 200,
-        "body": f"Last seen value saved: {last_seen}, strike number: {strike}"
+        "body": f"Last seen value saved: {last_seen}, strike number: {strike}",
     }
+
 
 def get_realmeye_html():
     url = realmeye_url
@@ -115,6 +105,7 @@ def get_realmeye_html():
         return None
     return response.text
 
+
 def parse_realmeye_html(html_content):
     soup = BeautifulSoup(html_content, "html.parser")
     last_seen_raw = "Not found"
@@ -126,11 +117,12 @@ def parse_realmeye_html(html_content):
             break
     return last_seen_raw
 
+
 def format_raw_last_seen(raw_last_seen: str):
     if raw_last_seen == "Hidden":
         print(f"Hmmm, being sneaky I see...")
     # Remove " as Kensei" or similar suffix
-    cleaned = re.sub(r' as .*', '', raw_last_seen)
+    cleaned = re.sub(r" as .*", "", raw_last_seen)
     # Convert to ISO 8601 format
     try:
         dt = datetime.strptime(cleaned, "%Y-%m-%d %H:%M:%S")
@@ -138,6 +130,7 @@ def format_raw_last_seen(raw_last_seen: str):
     except ValueError:
         print(f"Error parsing last seen: {cleaned}")
         return ""
+
 
 def generate_message(last_seen: str, strike: int):
     # Strike 1
@@ -155,29 +148,24 @@ def generate_message(last_seen: str, strike: int):
 
     return f"<:bufocometothedarkside:1393744385782448199> Welcome back, <@{discord_id}>"
 
+
 # Discord notification function
 def notify_discord(last_seen: str, strike: int):
-    webhook_url = get_secure_variable('webhook')
+    webhook_url = get_secure_variable("webhook")
     if not webhook_url:
         print("No Discord webhook URL configured.")
         return
     content = generate_message(last_seen, strike)
-    message = {
-        "content": content,
-        "allowed_mentions": {
-            "users": [discord_id,boss_id]
-        }
-    }
+    message = {"content": content, "allowed_mentions": {"users": [discord_id, boss_id]}}
 
     try:
         resp = requests.post(
             webhook_url,
             data=json.dumps(message),
             headers={"Content-Type": "application/json"},
-            timeout=5
+            timeout=5,
         )
         resp.raise_for_status()
         print("Notification sent to Discord.")
     except requests.RequestException as e:
         print(f"Failed to send Discord notification: {e}")
-
