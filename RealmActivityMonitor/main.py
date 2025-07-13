@@ -20,7 +20,7 @@ def get_secure_variable(link: str):
 discord_id = get_secure_variable("id")
 boss_id = get_secure_variable("id/boss")
 realmeye_url = get_secure_variable("realmeye")
-realmeye_headers = get_secure_variable("realmeye/headers")
+realmeye_headers = get_secure_variable("realmeye/header")
 
 
 # Main hanlder
@@ -32,7 +32,7 @@ def lambda_handler(event, context):
     print("Fetched RealmEye HTML successfully.")
 
     # Parse the HTML to find "Last seen"
-    last_seen_raw = parse_realmeye_html(response.text)
+    last_seen_raw = parse_realmeye_html(response)
 
     # Clean and parse "Last seen" into ISO 8601 format
     last_seen = format_raw_last_seen(last_seen_raw)
@@ -46,15 +46,18 @@ def lambda_handler(event, context):
     dynamodb = boto3.resource("dynamodb")
     table = dynamodb.Table(table_name)
 
-    # Get existing data (fetch by PlayerName as partition key)
+    # Get existing data (get single item by PlayerName)
     existing_timestamp = ""
-    strike = 0
+    existing_strike = 0
     try:
         response = table.get_item(Key={"PlayerName": "Dachs"})
         item = response.get("Item")
-        existing_timestamp = item["Timestamp"]
-        strike = item.get("Strike", 0)
-        print(f"Existing timestamp: {existing_timestamp}")
+        if item:
+            existing_timestamp = item.get("Timestamp", "")
+            existing_strike = item.get("Strike", 0)
+            print(
+                f"Existing timestamp: {existing_timestamp}, Existing strike: {existing_strike}"
+            )
     except Exception as e:
         print(f"Error fetching existing item: {e}")
 
@@ -62,29 +65,36 @@ def lambda_handler(event, context):
         print("No existing timestamp found, treating as new entry.")
 
     # Compare timestamps
+    strike = existing_strike
     try:
         if existing_timestamp:
             existing_dt = isoparse(existing_timestamp)
             new_dt = isoparse(last_seen)
+            print(
+                f"Comparing existing timestamp {existing_dt} with new timestamp {new_dt}"
+            )
             if new_dt > existing_dt:
                 strike += 1 if strike < 5 else 5  # Cap strikes at 5
             else:
                 strike = 0  # Reset strike if new timestamp is not later
         else:
-            strike = 1  # No previous timestamp, so treat as new
+            strike = 0  # No previous timestamp, so treat as new
     except Exception as e:
         print(f"Error comparing timestamps: {e}")
-        strike = 1  # Fallback to safe default
+        strike = 0  # Fallback to safe default
 
     print(f"strike number: {strike}")
 
-    # Update DynamoDB
-    table.put_item(
-        Item={"PlayerName": "Dachs", "Timestamp": last_seen, "Strike": strike}
-    )
+    # Update DynamoDB only if something has changed
+    if existing_timestamp and (
+        existing_timestamp != last_seen or existing_strike != strike
+    ):
+        table.put_item(
+            Item={"PlayerName": "Dachs", "Timestamp": last_seen, "Strike": strike}
+        )
+        print(f"Last seen value saved: {last_seen}")
 
-    print(f"Last seen value saved: {last_seen}")
-    if strike > 0 and strike < 6:
+    if strike != existing_strike:
         notify_discord(last_seen, strike)
     return {
         "statusCode": 200,
@@ -133,15 +143,18 @@ def format_raw_last_seen(raw_last_seen: str):
 
 
 def generate_message(last_seen: str, strike: int):
+    # Good job
+    if strike == 0:
+        return f"<:bufoblessback:1393763930349899786> Pray you stay on the right path, <@{discord_id}>"
     # Strike 1
     if strike == 1:
-        return f"<:bufoalarma:1393741604040212510> BUSTED! <@{discord_id}> was spotted at <t:{int(datetime.fromisoformat(last_seen.replace('Z', '')).timestamp())}:R>. Explain yourself, or face the consequences!"
+        return f"<a:bufoalarma:1393741604040212510> BUSTED! <@{discord_id}> was spotted <t:{int(datetime.fromisoformat(last_seen.replace('Z', '')).timestamp())}:R>. Let's hope you choose a better path. This behavior will not be tolerated..."
     # Strike 2
     if strike == 2:
-        return f"<:bufocantbelieveyouraudacity:1393730510567637043> <@{discord_id}> has been active as of <t:{int(datetime.fromisoformat(last_seen.replace('Z', '')).timestamp())}:R>. You are playing with fire, and this behavior will not be tolerated."
+        return f"<:bufocantbelieveyouraudacity:1393730510567637043> <@{discord_id}>, you have continued to be play. Explain yourself, or face the consequences!"
     # Strike 3, you're out!
     if strike == 3:
-        return f"<:bufobehindbars:1393741606292684801> Strike three, <@{discord_id}>! You have continued to be active as of <t:{int(datetime.fromisoformat(last_seen.replace('Z', '')).timestamp())}:R>.\n<@{boss_id}> has been informed of this continued transgression."
+        return f"<:bufobehindbars:1393741606292684801> <@{discord_id}>, you have defied me for the last time.\n<@{boss_id}> has been informed of this continued transgression."
     # Strike 4, clown
     if strike == 4:
         return f"<:bufoclown:1393743230247501965> <-- <@{discord_id}>"

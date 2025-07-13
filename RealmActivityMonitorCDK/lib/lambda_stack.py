@@ -31,11 +31,13 @@ class LambdaStack(Stack):
         # Grant the Lambda function permissions to access the DynamoDB table
         dynamodb_table.grant_read_write_data(lambda_function)
 
-        # Create a rule to trigger Lambda every 30 minutes
+        # Create a rule to trigger Lambda every 5 minutes on the clock
         rule = events.Rule(
             self,
             "RealmActivitySchedule",
-            schedule=events.Schedule.rate(Duration.minutes(5)),
+            schedule=events.Schedule.cron(
+                minute="0/5", hour="*", day="*", month="*", year="*"
+            ),
         )
         rule.add_target(targets.LambdaFunction(lambda_function))
 
@@ -47,7 +49,7 @@ class LambdaStack(Stack):
                     f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/id",
                     f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/id/boss",
                     f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/realmeye",
-                    f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/realmeye/headers",
+                    f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/realmeye/header",
                 ],
             )
         )

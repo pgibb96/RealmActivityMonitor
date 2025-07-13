@@ -16,8 +16,5 @@ class DynamoDBStack(Stack):
             partition_key=dynamodb.Attribute(
                 name="PlayerName", type=dynamodb.AttributeType.STRING  # Partition key
             ),
-            sort_key=dynamodb.Attribute(
-                name="Timestamp", type=dynamodb.AttributeType.STRING  # Sort key
-            ),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
         )
