@@ -31,7 +31,7 @@ class LambdaStack(Stack):
         # Create a rule to trigger Lambda every 30 minutes
         rule = events.Rule(
             self, "RealmActivitySchedule",
-            schedule=events.Schedule.rate(Duration.minutes(30))
+            schedule=events.Schedule.rate(Duration.minutes(5))
         )
         rule.add_target(targets.LambdaFunction(lambda_function))
 
@@ -39,7 +39,11 @@ class LambdaStack(Stack):
             iam.PolicyStatement(
                 actions=["ssm:GetParameter"],
                 resources=[
-                    f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/webhook"
+                    f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/webhook",
+                    f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/id",
+                    f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/id/boss",
+                    f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/realmeye",
+                    f"arn:aws:ssm:{self.region}:{self.account}:parameter/discord/realmeye/headers"
                 ]
             )
 )
