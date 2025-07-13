@@ -162,25 +162,24 @@ def format_raw_last_seen(raw_last_seen: str):
         print(f"Error parsing last seen: {cleaned}")
         return ""
 
-
 def generate_message(last_seen: str, strike: int):
     # Good job
     if strike == 0:
-        return f"<:bufoblessback:1393763930349899786> Pray you stay on the right path, <@{discord_id}>"
+        return f"<:bufoblessback:1393766628365303878> Pray you stay on the right path, <@{discord_id}>"
     # Strike 1
     if strike == 1:
-        return f"<a:bufoalarma:1393741604040212510> BUSTED! <@{discord_id}> was spotted <t:{int(datetime.fromisoformat(last_seen.replace('Z', '')).timestamp())}:R>. Let's hope you choose a better path. This behavior will not be tolerated..."
+        return f"<a:bufoalarma:1393766625462980649> BUSTED! <@{discord_id}> was spotted <t:{int(datetime.fromisoformat(last_seen.replace('Z', '')).timestamp())}:R>. Let's hope you choose a better path. This behavior will not be tolerated..."
     # Strike 2
     if strike == 2:
         return f"<:tsabufogropesyou:1393770044449886340> <@{discord_id}>, you have continued to be play. Explain yourself, or face the consequences!"
     # Strike 3, you're out!
     if strike == 3:
-        return f"<:bufobehindbars:1393741606292684801> <@{discord_id}>, you have defied me for the last time.\n<@{boss_id}> has been informed of this continued transgression."
+        return f"<:bufobehindbars:1393766626922332282> <@{discord_id}>, you have defied me for the last time.\n<@{boss_id}> has been informed of this continued transgression."
     # Strike 4, clown
     if strike == 4:
-        return f"<:bufoclown:1393743230247501965> <-- This you, <@{discord_id}>?"
+        return f"<:bufoclown:1393766629644697721> <-- This you, <@{discord_id}>?"
 
-    return f"<:bufocometothedarkside:1393744385782448199> Welcome back, <@{discord_id}>"
+    return f"<:bufocometothedarkside:1393766630970097664> Welcome back, <@{discord_id}>"
 
 
 # Discord notification function
